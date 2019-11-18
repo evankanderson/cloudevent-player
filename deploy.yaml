@@ -1,0 +1,38 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cloudevents-player
+data:
+  application.properties: |
+    com.redhat.syseng.tools.cloudevents.service.BrokerService/mp-rest/url=http://default-broker
+---
+apiVersion: serving.knative.dev/v1alpha1
+kind: Service
+metadata:
+  name: cloudevents-player
+spec:
+  runLatest:
+    configuration:
+      revisionTemplate:
+        spec:
+          container:
+            image: ruromero/cloudevents-player-jdk8@sha256:47d657001fd25c8398b1e299b404742d16d9938a9f4cc9d004aa7d84053a70c6
+            volumeMounts:
+              - name: configuration
+                mountPath: /deployments/config
+          volumes:
+            - name: configuration
+              configMap:
+                name: cloudevents-player
+---
+apiVersion: eventing.knative.dev/v1alpha1
+kind: Trigger
+metadata:
+  name: cloudevents-player
+spec:
+  broker: default
+  subscriber:
+    ref:
+      apiVersion: serving.knative.dev/v1alpha1
+      kind: Service
+      name: cloudevents-player
